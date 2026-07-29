@@ -23,7 +23,7 @@ from typing import Any, Dict, Iterable, List, Optional
 
 
 APP_NAME = "Video İndirici"
-APP_VERSION = "1.0"
+APP_VERSION = "1.1"
 
 TOOL_FILENAMES = {
     "yt-dlp": "yt-dlp.exe",
@@ -384,6 +384,7 @@ class VideoDownloaderApp:
         self.url_entry = ttk.Entry(source_frame, textvariable=self.url_var)
         self.url_entry.grid(row=0, column=0, sticky=tk.EW, padx=10, pady=10)
         self.url_entry.focus_set()
+        self._add_entry_context_menu(self.url_entry)
 
         options_frame = ttk.LabelFrame(main, text="Ayarlar")
         options_frame.pack(fill=tk.X, pady=8)
@@ -404,7 +405,9 @@ class VideoDownloaderApp:
         folder_row = ttk.Frame(options_frame)
         folder_row.grid(row=1, column=1, sticky=tk.EW, padx=10, pady=8)
         folder_row.columnconfigure(0, weight=1)
-        ttk.Entry(folder_row, textvariable=self.output_dir_var).grid(row=0, column=0, sticky=tk.EW)
+        self.output_dir_entry = ttk.Entry(folder_row, textvariable=self.output_dir_var)
+        self.output_dir_entry.grid(row=0, column=0, sticky=tk.EW)
+        self._add_entry_context_menu(self.output_dir_entry)
         ttk.Button(folder_row, text="Seç", command=self.choose_output_dir).grid(row=0, column=1, padx=(8, 0))
 
         ttk.Checkbutton(
@@ -492,6 +495,23 @@ class VideoDownloaderApp:
         scrollbar = ttk.Scrollbar(log_frame, orient=tk.VERTICAL, command=self.log_text.yview)
         scrollbar.grid(row=0, column=1, sticky=tk.NS)
         self.log_text.configure(yscrollcommand=scrollbar.set)
+
+    def _add_entry_context_menu(self, entry: ttk.Entry) -> None:
+        menu = tk.Menu(entry, tearoff=0)
+        menu.add_command(label="Kes", command=lambda: entry.event_generate("<<Cut>>"))
+        menu.add_command(label="Kopyala", command=lambda: entry.event_generate("<<Copy>>"))
+        menu.add_command(label="Yapıştır", command=lambda: entry.event_generate("<<Paste>>"))
+        menu.add_separator()
+        menu.add_command(label="Tümünü Seç", command=lambda: entry.select_range(0, tk.END))
+
+        def show_menu(event: "tk.Event[Any]") -> None:
+            entry.focus_set()
+            try:
+                menu.tk_popup(event.x_root, event.y_root)
+            finally:
+                menu.grab_release()
+
+        entry.bind("<Button-3>", show_menu)
 
     def choose_output_dir(self) -> None:
         selected = filedialog.askdirectory(
